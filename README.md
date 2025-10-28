@@ -15,6 +15,8 @@ This repository contains MATLAB code to reproduce the main figures from our pape
 > establish rigorous bounds of sensitivity enhancement of EPs in nonlinear systems, and helps envision and optimize technological applications of nonlinear EPs. 
 > Our theoretical approach is general and can be extended to nonlinear perturbations of $3^\mathrm{rd}$ and higher-order EPs.
 
+[![ArXiv](https://img.shields.io/badge/ArXiv-PDF-blue)](https://arxiv.org/pdf/2502.19236)
+
 ---
 
 ## 🧩 Repository contents
