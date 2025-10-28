@@ -30,8 +30,7 @@ This repository contains MATLAB code to reproduce the main figures from our pape
 
 | Figure | Script | Description |
 |---------|---------|-------------|
-| Video 1 & 
-  Fig. 2–3 | `elliptic_umbilic_singularity_set.m` | Generates the EP surface and its cross-section (elliptic umbilic structure). |
+| Video 1 & Fig. 2–3 | `elliptic_umbilic_singularity_set.m` | Generates the EP surface and its cross-section (elliptic umbilic structure). |
 | Fig. 4 | `complex_eigenvalue_traces.m` | Computes and plots complex eigenvalue trajectories of \( H($\alpha$, $\beta$', $\delta$) \). |
 
 https://github.com/user-attachments/assets/2b59a310-0293-457b-b7c8-7a9dcc50f435
