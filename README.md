@@ -54,7 +54,7 @@ Large α: exact scaling is lost, but three–cusped shape remains. The half-infi
 <img width="1752" height="2340" alt="figure4" src="https://github.com/user-attachments/assets/2138e79d-d387-4196-afe6-9bb606c6397b" />
 
 Fig. 4: Selected complex eigenvalue traces. Complex eigenvalues (real and imaginary parts) of H in Eq (1) at fixed, nonzero α/γ = 1 across lines in the (β′, δ) plane shown as insets. 
-Regardless of the lines’ directions, we have two and four eigenvalues outside and inside the cone, respectively, in agreement with the number of values of critical points of the Lyapunov potential (see Supplementary Figure 3 for examples of the potential landscape). 
+Regardless of the lines’ directions, we have two and four eigenvalues outside and inside the cone, respectively, in agreement with the number of values of critical points of the Lyapunov potential. 
 At the smooth parts of the deltoid boundary (fold lines), two states are created/annihilated, and two states are unaffected by the boundary (a,b,e,f). Crossing the cusp, (c,d), three states coalesce at a 3rd-order nonlinear EP, denoted as EP3, and one state is unaffected
 
 ---
