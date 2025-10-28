@@ -1,0 +1,227 @@
+%% ========================================================================
+%  Figure 4: Calculating complex eigenvalue traces 
+%  ------------------------------------------------------------------------
+%  This script computes and visualizes the eigenvalue structure on 
+%  exceptional point surface across different parameter regimes (run modes) 
+%  to illustrate cusp and fold point structures.
+%
+%  Modes:
+%   run = 1 → two fold points
+%   run = 2 → one fold and one cusp point
+%   run = 3 → multiple fold points are crossed
+%
+%  Author: [Jan Wingenbach]
+% ========================================================================
+clear; close all; clc;
+
+%% ------------------------ USER PARAMETERS -------------------------------
+run = 1;                     % Select model regime (1, 2, or 3)
+N = 500;                     % Number of sampling points (e.g., 500–3000)
+x0 = 10; y0 = 10;            % Figure position
+width = 1200; height = 1000; % Figure size
+
+%% ------------------ UMBILIC PARAMETER DEFINITIONS -----------------------
+alpha_step = 5e-2;
+alpha_min = 0;
+
+% the teta-offset ensures avoidance of divergence
+offset = 1e-12;
+
+% Pre-allocate arrays
+alpha_max_index = 201;
+num_teta = 200;
+alpha_gamma_ar = zeros(1, alpha_max_index);
+beta_gamma_ar = zeros(alpha_max_index, num_teta);       
+delta_m_gamma_ar = zeros(alpha_max_index, num_teta);   
+beta_gamma_unnorm = zeros(alpha_max_index, num_teta);  
+delta_m_gamma_unnorm = zeros(alpha_max_index, num_teta);
+
+%% -------------------- COMPUTE UMBILIC CROSS-SECTION ---------------------
+for i = 1:alpha_max_index
+    alpha_gamma = i * alpha_step + alpha_min;
+    alpha_gamma_ar(i) = alpha_gamma;
+
+    % Compute teta range
+    teta = linspace(3 * pi / 2+offset, atan(-1 / alpha_gamma) + 2 * pi-offset, num_teta);
+
+    % Compute beta_gamma and p
+    beta_gamma = sqrt(1 ./ (sin(teta).^3 .* (sin(teta) - alpha_gamma .* cos(teta))));
+    p = beta_gamma .* sin(teta);
+
+    % Compute delta_m_gamma
+    delta_m_gamma = (1 ./ p - p ./ (1 - sqrt(1 - p.^2))) .* (alpha_gamma .* p + beta_gamma .* cos(teta));
+
+    % Normalization factor
+    s = 2 * (sqrt(1 + alpha_gamma^2) - 1);
+
+    % Store values
+    beta_gamma_unnorm(i, :) = beta_gamma;
+    delta_m_gamma_unnorm(i, :) = delta_m_gamma;
+    beta_gamma_ar(i, :) = beta_gamma/ s;
+    delta_m_gamma_ar(i, :) = delta_m_gamma / s;
+end
+
+delta_p_gamma_ar = -delta_m_gamma_ar;
+
+% Closest α/γ ≈ 0.1
+[~, index] = min(abs(alpha_gamma_ar - 0.1));
+closest_value = alpha_gamma_ar(index);
+
+%% ----------- MODEL PARAMETERS FOR EIGENVALUE CALCULATIONS----------------
+gx = 0;                     %cross-interaction
+gc = 0.2;                   %Kerr-like nonlinearity
+T1=-0.2;                    %loss mode 1
+T2=-0.4;                    %loss mode 2
+alpha = (gc-gx)/2;
+gamma = (T1-T2)/2;
+dLT = 0.1;                  %coupling strength constant
+
+k = linspace(0.5,1.5,N);
+Beta = dLT*k;               %coupling strength array
+kx = (Beta-gamma)/gamma/s;  %rescale to umbilic units
+
+% Pre-allocate arrays
+mu1 = nan(4,N)+1i*nan(4,N);
+mu2 = nan(4,N)+1i*nan(4,N);
+test = nan(4,N);
+
+if run == 1      %fixed delta
+    delta = 0.01;Delta = delta*ones(size(kx));
+elseif run == 2  %fold - cusp
+    delta = -0.020037;Delta = 3.3*kx+delta*ones(size(kx));
+elseif run == 3  %multi fold
+    delta = 0.0215;Delta = -1.25*kx+delta*ones(size(kx));    
+end
+
+%% ---------------------- ROOT & EIGENVALUE CALCULATION -------------------
+for i = 2:N
+clear teta
+
+delta = Delta(i);
+beta = Beta(i);
+
+% Skip if β == γ
+if abs(abs(beta) - abs(gamma)) == 0
+    continue;
+end
+
+% Define polynomial coefficients
+syms x;
+c4 = 1;
+c3 = -4/beta^2*(gamma^2+(alpha-delta)^2);
+c2 = -2*(1+4/beta^2*(delta^2-alpha^2-gamma^2));
+c1 = -4/beta^2*(gamma^2+(alpha+delta)^2);
+c0 = 1;
+
+% Solve quartic polynomial for real roots
+polynomial = c4*x^4 + c3*x^3 + c2*x^2 + c1*x + c0;
+real_roots = vpasolve(polynomial == 0, x, [0 1e20]);
+
+% determine |w|
+abs_w = sqrt(real_roots);
+
+% Root integrity test
+n_max = length(abs_w);
+if n_max>0
+    test(1:n_max,i) = 4*gamma^2/beta^2 * (abs_w./(1+real_roots)).^2 + 4/beta^2 .* (alpha*abs_w./(1+real_roots) + delta*abs_w./(1-real_roots)).^2;
+end
+
+% Calculate teta for |w| \neq 1
+condition = (abs(abs_w - 1) < 1e-4);
+teta(~condition) = acos(2/beta * (alpha * abs_w(~condition) ./ (1 + real_roots(~condition))) + delta * (abs_w(~condition) ./ (1 - real_roots(~condition))));
+teta(condition) = asin(-2*gamma/beta*(abs_w(condition)./(1+real_roots(condition))));
+
+teta = reshape(teta,length(abs_w),1);
+% Eigenvalues μ₁ and μ₂
+w = abs_w .* exp(1i * teta); 
+mu1(1:n_max,i) = alpha*(1-real_roots)./(1+real_roots) + delta + 1i*gamma + beta*w;
+mu2(1:n_max,i) = beta./w - alpha*(1-real_roots)./(1+real_roots) - delta -1i*gamma;
+end
+
+%% ---------------------- INTEGRITY CHECK ---------------------------------
+valid_entries = abs(test - 1) < 1e-5 | isnan(test);  % Check condition
+% Verify if all elements meet the condition
+if all(valid_entries)
+    disp('Root integrity check passed.');
+else
+    disp('Error: Root integrity check failed.');   
+    % Find problematic indices
+    invalid_indices = find(~valid_entries);
+    disp('Invalid elements found at indices:');
+    disp(invalid_indices);
+    
+    % Display the problematic values
+    disp('Problematic values:');
+    disp(test(invalid_indices));
+end
+
+%% ---------------------- PLOTTING SECTION -------------------------------
+lineStyles = [
+    0.3467    0.5360    0.6907;  % blue-gray
+    0.9153    0.2816    0.2878;  % red
+    0.4416    0.7490    0.4322;  % green
+    1.0000    0.5984    0.2000   % orange
+];
+linecolor = [0.4703    0.1098    0.4286];
+
+s = 2*(sqrt(1+alpha^2/gamma^2)-1);
+kx = (Beta-gamma)/gamma/s;
+w_values = [closest_value,1,10];
+y_star1 = Delta(1)/gamma/s;
+y_star2 = Delta(end)/gamma/s;
+lw = 3;
+
+% Umbilic cross-section line in δ–β space
+figure(1+10*run);clf;hold on;
+line([-10 10], [0 0], 'Color', [0.5 0.5 0.5], 'LineStyle', '--', 'LineWidth', lw); % Horizontal line
+line([0 0], [-10 10], 'Color', [0.5 0.5 0.5], 'LineStyle', '--', 'LineWidth', lw); % Vertical line
+plot(beta_gamma_ar(alpha_gamma_ar==w_values(2),:)-beta_gamma_ar(alpha_gamma_ar==w_values(2),1),delta_m_gamma_ar(alpha_gamma_ar==w_values(2),:),'color',linecolor, 'LineWidth', lw*2);
+plot(beta_gamma_ar(alpha_gamma_ar==w_values(2),:)-beta_gamma_ar(alpha_gamma_ar==w_values(2),1),delta_p_gamma_ar(alpha_gamma_ar==w_values(2),:),'color',linecolor, 'LineWidth', lw*2);
+line([kx(1) kx(end)], [y_star1 y_star2], 'Color', 'k', 'LineStyle', '-', 'LineWidth', lw+1);grid on;xlabel("\beta'/(\gamma s)");ylabel('\delta/(\gamma s)');set(gca,'fontsize',18);
+hold off;ylim([-0.5 0.5]);xlim([-0.2 0.6]);box on;set(gca,'linewidth',lw-1);
+set(gcf,'position',[x0,y0,width,width]);
+
+%% Real part of eigenvalues
+figure(2+10*run);clf;
+hold on;
+scatter(kx,real(mu1(:,:)), 75, lineStyles(:,:), 'filled');
+hold off;box on;grid on;ylim([-1 1]);
+set(gca,'fontsize',18);set(gca,'LineWidth',2);axis tight;xlim([-0.2 0.6]);
+xlabel("\beta'/(\gamma s)");ylabel('Re(E)');set(gca,'fontsize',18);
+if run == 2
+ylim([0.05 0.172]);
+end
+set(gcf,'position',[x0,y0,width,width]);
+
+%% Imaginary part of eigenvalues
+figure(3+10*run);clf;
+hold on;
+scatter(kx,imag(mu1(:,:)), 75, lineStyles(:,:), 'filled');
+hold off;box on;grid on;ylim([-1 1]);
+set(gca,'fontsize',18);set(gca,'LineWidth',2)
+xlabel("\beta'/(\gamma s)");ylabel('Im(E)');set(gca,'fontsize',18);
+axis tight;xlim([-0.2 0.6]);
+if run == 2
+ylim([0.1 0.4]);
+end
+set(gcf,'position',[x0,y0,width,width]);xlabel("\beta'/(\gamma s)");ylabel('\delta/(\gamma s)');set(gca,'fontsize',18);
+
+%% IN RUN2 ZOOM-INS ARE SHOWN FOR THE CUSP POINT
+if run == 2
+figure(4+10*run);clf;
+hold on;scatter(kx,real(mu1(:,:)), 180, lineStyles(:,:), 'filled');
+hold off;box on;grid on;ylim([-1 1]);
+set(gca,'fontsize',18);set(gca,'linewidth',lw-1);axis tight;xlim([-0.1 0]);ylim([0.064 0.075]);
+xlabel("\beta'/(\gamma s)");ylabel('Re(E)');set(gca,'fontsize',18);
+set(gcf,'position',[x0,y0,width,width]);
+
+figure(5+10*run);clf;
+hold on;
+scatter(kx,imag(mu1(:,:)), 180, lineStyles(:,:), 'filled');
+hold off;box on;grid on;ylim([-1 1]);
+set(gca,'fontsize',18);set(gca,'linewidth',lw-1);
+xlabel("\beta'/(\gamma s)");ylabel('Im(E)');set(gca,'fontsize',18);
+axis tight;xlim([-0.1 0]);ylim([0.115 0.135]);
+set(gcf,'position',[x0,y0,width,width]);
+
+end
