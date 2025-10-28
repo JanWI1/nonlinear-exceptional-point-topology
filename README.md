@@ -1,4 +1,4 @@
-# Universal topology of exceptional points        in nonlinear non-Hermitian systems
+# Universal topology of exceptional points<br> in nonlinear non-Hermitian systems
 
 This repository contains MATLAB code to reproduce the main figures from our paper:
 
