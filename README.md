@@ -16,7 +16,8 @@ This repository contains MATLAB code to reproduce the main figures from our pape
 > Our theoretical approach is general and can be extended to nonlinear perturbations of $3^\mathrm{rd}$ and higher-order EPs.
 
 [![ArXiv](https://img.shields.io/badge/ArXiv-PDF-blue)](https://arxiv.org/pdf/2502.19236)
-[![DOI](https://zenodo.org/badge/1084981147)](https://doi.org/10.5281/zenodo.17589377)
+.. image:: https://zenodo.org/badge/1084981147.svg
+  :target: https://doi.org/10.5281/zenodo.17589377
 
 ---
 
